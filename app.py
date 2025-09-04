@@ -2,11 +2,14 @@ import gspread
 import translators as ts
 import httpx
 from gspread.utils import rowcol_to_a1
+import time
 
 gc = gspread.oauth(
     credentials_filename='credentials.json',
     authorized_user_filename='authorized_user.json'
 )
+
+start_time = time.time()
 
 sh = gc.open("Grillin it")
 worksheet = sh.sheet1
@@ -25,8 +28,8 @@ for i in range(len(languages)):
         joined_keys,
         from_language="en",
         to_language=languages[i],
-        translator="bing"
-        # http_client="httpx"
+        translator="bing",
+        http_client="httpx"
     )
 
     #split into 2d array strings
@@ -36,3 +39,6 @@ for i in range(len(languages)):
     start = rowcol_to_a1(2, i+2)                 
     end = rowcol_to_a1(len(key_txts) + 1, i+2)   
     worksheet.update(range_name=f"{start}:{end}", values=lang_col)
+
+end_time = time.time()
+print(f"Time taken: {end_time - start_time} seconds")
