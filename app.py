@@ -1,5 +1,6 @@
 import gspread
 import translators as ts
+import httpx
 from gspread.utils import rowcol_to_a1
 
 gc = gspread.oauth(
@@ -11,31 +12,27 @@ sh = gc.open("Grillin it")
 worksheet = sh.sheet1
 
 key_txts = worksheet.col_values(1)[1:]
-languages = [lang[-3:-1] for lang in worksheet.row_values(1)[1:]]
+delimiter = " ||| "
+joined_keys = delimiter.join(key_txts)
+# print(joined_keys)
+languages = [lang[-3:-1] for lang in worksheet.row_values(1)[1:]] # extract language codes
 
-all_translations = []
-
-for lang in languages:
-    if lang == "en":
-        all_translations.append(key_txts)
+for i in range(len(languages)):
+    if languages[i] == "en": # skip translate en to en
         continue
 
-    translated_list = []
-    for j, text in enumerate(key_txts, start=2):
-        translated = ts.translate_text(
-            text,
-            from_language="en",
-            to_language=lang,
-            translator="google"
-        )
-        translated_list.append(translated)
+    translated_keys = ts.translate_text(
+        joined_keys,
+        from_language="en",
+        to_language=languages[i],
+        translator="bing"
+        # http_client="httpx"
+    )
 
-    all_translations.append(translated_list)
+    #split into 2d array strings
+    translated_list = translated_keys.split(delimiter)
+    lang_col = [[t] for t in translated_list]
 
-# Rotate cols → rows
-rows = list(zip(*all_translations))
-
-# Bulk update once
-start = "B2"
-end = rowcol_to_a1(len(key_txts)+1, len(languages)+1)
-worksheet.update(f"{start}:{end}", rows)
+    start = rowcol_to_a1(2, i+2)                 
+    end = rowcol_to_a1(len(key_txts) + 1, i+2)   
+    worksheet.update(range_name=f"{start}:{end}", values=lang_col)
