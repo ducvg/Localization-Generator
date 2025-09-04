@@ -1,0 +1,2 @@
+# Localization Generator
+Localization generator
